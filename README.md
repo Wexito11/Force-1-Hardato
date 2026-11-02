@@ -46,3 +46,5 @@
 - [ТЗ и габариты](docs/tz-gabarity.md)
 - [Концепция (PDF)](docs/concept.pdf)
 - [План работ (PDF)](docs/plan.pdf)
+- [Общий контекст для агентов](docs/context.md)
+- [Промпты для агентов](docs/agent-prompts.md)
