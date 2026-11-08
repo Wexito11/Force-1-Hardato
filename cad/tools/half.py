@@ -105,10 +105,13 @@ def module(m, z0, shift, ang_deg):
     for xx in (-13, 13):
         it.append((cq.Workplane("XY").circle(8).extrude(10 + T).translate((xx, Y(Y_IN + 40), z0 - 10)), (0.75, 0.75, 0.75)))
     if m == "A":
-        # лидар на полке у переднего торца, верх не выше крышки
-        it.append((box(BL / 2, BL / 2 + 82, *yy(Y_IN + 4, Y_IN + 38), z0 + 21, z0 + 25), PLA))     # полка лидара
-        it.append((box(BL / 2 + 26, BL / 2 + 82, *yy(Y_IN + 4, Y_IN + 60), z0 + 25, z0 + 48), BLK))
-        it.append((cq.Workplane("XY").circle(26).extrude(20).translate((BL / 2 + 54, Y(Y_IN + 32), z0 + 48)), DARK))
+        # лидар RPLIDAR C1 на кронштейне у внутренней стенки, в зазоре между модулями, рядом с П-профилем (+X)
+        # луч ~52 над низом корпуса: на рельсах 141 над шпалой (41 над УГР), в укрытии верх 76 < 85
+        LX0, LX1 = 108.0, 163.0
+        it.append((box(LX0, BL / 2, *yy(Y_IN - 4, Y_IN), z0 + 6, z0 + 21), PLA))                     # пластина на стенке
+        it.append((box(LX0, BL / 2, *yy(Y_IN - 62, Y_IN - 4), z0 + 17, z0 + 21), PLA))              # полка
+        it.append((box(LX0, LX1, *yy(Y_IN - 61, Y_IN - 6), z0 + 21, z0 + 44), BLK))                  # корпус лидара
+        it.append((cq.Workplane("XY").circle(26).extrude(20).translate(((LX0 + LX1) / 2, Y(Y_IN - 33.5), z0 + 44)), DARK))
         # камера на MG90S под крышкой (смотрит вверх через крышку)
         it.append((box(35, 60, *yy(Y_IN + 40, Y_IN + 65), z0 + BH - 12, z0 + BH - 2), PCB))
         # Pi 5, PCA9685, XH-M400 x2, ESP A, L298N - габариты
