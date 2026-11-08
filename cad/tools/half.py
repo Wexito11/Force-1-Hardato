@@ -9,8 +9,9 @@ UGR = 100.0                   # уровень головки над шпало�
 B2B = 720.0                   # внутренние грани колёс поезда
 TR_FLH, TR_FLT, TR_WD = 14.0, 16.5, 475.0
 TIE_L, TIE_W, TIE_H, TIE_P = 1375.0, 135.0, 95.0, 272.0
-CLR_Z, CLR_Y = 15.0, 15.0     # запас до УГР и до грани колеса поезда
-ZMAX = UGR - CLR_Z            # 85 - потолок укрытия
+TR_LOW = 32.5                 # низ необрессоренных частей поезда над УГР: ГОСТ 9238 - 65 мм (натура) / 2
+CLR_Z, CLR_Y = 15.0, 15.0     # запас до частей поезда и до грани колеса
+ZMAX = 117.0                  # потолок укрытия 1:2: УГР 100 + 32,5 - запас 15 (округлено вниз)
 YMAX = B2B / 2 - CLR_Y        # 345
 
 # ---- робот ----
@@ -38,7 +39,7 @@ SKID_Y = Y_OUT - 10                  # плоскость полоза |Y|
 
 def hidden_ok():
     wheel_out = Y_FLO + WW - FLT - STROKE   # обод снаружи: 380+40-80
-    return dict(wheel_out=wheel_out, ymax=YMAX, top=Z_HIDE + BH + LID, zmax=ZMAX,
+    return dict(wheel_out=wheel_out, ymax=YMAX, top=Z_HIDE + 101, zmax=ZMAX,
                 gap_rails=2 * Y_IN, gap_hidden=2 * (Y_IN - STROKE),
                 beam_A_end=-(Y_OUT - T) + BEAM_L, beam_A_end_hidden=-(Y_OUT - T) + BEAM_L + STROKE,
                 B_inner_hidden=Y_IN - STROKE, rack_end_rails=-(Y_OUT - T) + RACK_L, rack_end_hidden=-(Y_OUT - T) + RACK_L + STROKE + 0 * STROKE,
@@ -79,7 +80,10 @@ def module(m, z0, shift, ang_deg):
         it.append((box(-BL / 2, BL / 2, *yy(a, b), z0, z0 + BH), WOOD))
     for x in (-BL / 2, BL / 2 - T):
         it.append((box(x, x + T, *yy(Y_IN, Y_OUT), z0, z0 + BH), WOOD))
-    it.append((box(-BL / 2, BL / 2, *yy(Y_IN, Y_OUT), z0 + BH, z0 + BH + LID), GLASS))
+    lid = box(-BL / 2, BL / 2, *yy(Y_IN, Y_OUT), z0 + BH, z0 + BH + LID)
+    if m == "A":
+        lid = lid.cut(cq.Workplane("XY").circle(29).extrude(LID + 2).translate((95.5, Y(Y_IN + 59), z0 + BH - 1)))
+    it.append((lid, GLASS))
     # колёса + JGA25 (ведущее +X)
     for x in (WB / 2, -WB / 2):
         it.append((wheel(x, s, z0 + AXLE).translate((0, dy, 0)), DARK))
@@ -105,13 +109,14 @@ def module(m, z0, shift, ang_deg):
     for xx in (-13, 13):
         it.append((cq.Workplane("XY").circle(8).extrude(10 + T).translate((xx, Y(Y_IN + 40), z0 - 10)), (0.75, 0.75, 0.75)))
     if m == "A":
-        # лидар RPLIDAR C1 на кронштейне у внутренней стенки, в зазоре между модулями, рядом с П-профилем (+X)
-        # луч ~52 над низом корпуса: на рельсах 141 над шпалой (41 над УГР), в укрытии верх 76 < 85
-        LX0, LX1 = 108.0, 163.0
-        it.append((box(LX0, BL / 2, *yy(Y_IN - 4, Y_IN), z0 + 6, z0 + 21), PLA))                     # пластина на стенке
-        it.append((box(LX0, BL / 2, *yy(Y_IN - 62, Y_IN - 4), z0 + 17, z0 + 21), PLA))              # полка
-        it.append((box(LX0, LX1, *yy(Y_IN - 61, Y_IN - 6), z0 + 21, z0 + 44), BLK))                  # корпус лидара
-        it.append((cq.Workplane("XY").circle(26).extrude(20).translate(((LX0 + LX1) / 2, Y(Y_IN - 33.5), z0 + 44)), DARK))
+        # лидар RPLIDAR C1 на крышке A спереди, утоплен: площадка на стойках z0+58, головка через вырез Ø58 в крышке
+        # верх z0+101: в укрытии 113 < 117 (низ частей поезда 132,5); плоскость луча ~z0+88 = 19 над крышкой
+        LX, LY = 95.5, Y_IN + 59
+        for xx, yv in ((LX - 24, LY - 24), (LX + 24, LY - 24), (LX - 24, LY + 24), (LX + 24, LY + 24)):
+            it.append((cq.Workplane("XY").circle(2.5).extrude(54).translate((xx, Y(yv), z0 + T)), (0.75, 0.75, 0.75)))   # стойки M3
+        it.append((box(LX - 29, LX + 29, *yy(LY - 29, LY + 29), z0 + 58, z0 + 60), PLA))                         # площадка
+        it.append((box(LX - 27.8, LX + 27.8, *yy(LY - 27.8, LY + 27.8), z0 + 60, z0 + 81), BLK))                 # корпус C1
+        it.append((cq.Workplane("XY").circle(26).extrude(20).translate((LX, Y(LY), z0 + 81)), DARK))             # вращающаяся головка
         # камера на MG90S под крышкой (смотрит вверх через крышку)
         it.append((box(35, 60, *yy(Y_IN + 40, Y_IN + 65), z0 + BH - 12, z0 + BH - 2), PCB))
         # Pi 5, PCA9685, XH-M400 x2, ESP A, L298N - габариты
@@ -181,6 +186,7 @@ def track(x0=-700, x1=700, wagon=False):
             it.append((cyl_y(0, *sorted((yb, yb + s * 70)), UGR + TR_WD / 2, TR_WD / 2), (0.55, 0.15, 0.15)))
             it.append((cyl_y(0, *sorted((yb, yb + s * TR_FLT)), UGR + TR_WD / 2, TR_WD / 2 + TR_FLH), (0.55, 0.15, 0.15)))
         it.append((cyl_y(0, -B2B / 2, B2B / 2, UGR + TR_WD / 2, 70), (0.4, 0.1, 0.1)))
+        it.append((box(-150, 150, -B2B / 2 + 75, B2B / 2 - 75, UGR + TR_LOW, UGR + TR_LOW + 45), (0.5, 0.3, 0.3)))   # необрессоренные части: 65/2 над УГР
     return it
 
 
